@@ -57,8 +57,8 @@ template("ts_flatbuffer") {
 
     args = [
       "--ts",
-      "--no-fb-import",
       "--gen-mutable",
+      "--no-fb-import",
       "-o",
       rebase_path(out_dir, root_build_dir),
       "-I",
