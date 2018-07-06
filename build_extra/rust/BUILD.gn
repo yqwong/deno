@@ -1,0 +1,12 @@
+import("rust.gni")
+
+rust_component("stdlib") {
+  crate_type = "staticlib"
+  source_root = "empty.rs"
+  if (current_os == "mac") {
+    libs = [ "resolv" ]
+  }
+  if (current_os == "win") {
+    libs = [ "userenv.lib" ]
+  }
+}

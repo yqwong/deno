@@ -78,6 +78,37 @@ template("rust_crate") {
   }
 }
 
+template("rust_component") {
+  crate_target = target_name + "_crate"
+  rust_crate(crate_target) {
+    forward_variables_from(invoker,
+                           [
+                             "crate_type",
+                             "rust_deps",
+                             "source_root",
+                           ])
+    if (!defined(invoker.crate_type)) {
+      crate_type = "rlib"
+    }
+  }
+
+  crate_outputs = get_target_outputs(":" + crate_target)
+  component(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "libs",
+                             "deps",
+                           ])
+    if (!defined(libs)) {
+      libs = []
+    }
+    libs += [ crate_outputs[0] ]
+    deps = [
+      ":" + crate_target,
+    ]
+  }
+}
+
 template("rust_library") {
   rust_crate(target_name) {
     crate_type = "rlib"
@@ -86,8 +117,9 @@ template("rust_library") {
 }
 
 template("rust_executable") {
-  bin_target = target_name + "_bin"
-  rust_crate(bin_target) {
+  bin_name = target_name + "_bin"
+  bin_target = ":" + bin_name
+  rust_crate(bin_name) {
     crate_type = "bin"
     forward_variables_from(invoker, "*")
   }
@@ -95,11 +127,7 @@ template("rust_executable") {
   # By compiling an empty file as crate-type=staticlib we get all the code
   # for the rust stdlib, which are not included in the object file outputs
   # of other libs.
-  stdlib_target = target_name + "_stdlib"
-  rust_crate(stdlib_target) {
-    crate_type = "staticlib"
-    source_root = "src/empty.rs"
-  }
+  stdlib_target = "//build_extra/rust:stdlib"
 
   executable(target_name) {
     forward_variables_from(invoker, "*")
@@ -109,12 +137,14 @@ template("rust_executable") {
     }
 
     deps += [
-      ":" + bin_target,
-      ":" + stdlib_target,
+      bin_target,
+      stdlib_target,
     ]
 
-    libs = get_target_outputs(":" + bin_target) +
-           get_target_outputs(":" + stdlib_target)
+    libs = [
+      get_label_info(bin_target, "target_out_dir") + "/$bin_name.o",
+      get_label_info(stdlib_target, "target_out_dir") + "/stdlib.a",
+    ]
 
     if (defined(rust_deps)) {
       deps += rust_deps
@@ -124,13 +154,6 @@ template("rust_executable") {
         dep_obj = "$dep_dir/$dep_name.o"
         libs += [ dep_obj ]
       }
-    }
-
-    if (current_os == "mac") {
-      libs += [ "resolv" ]
-    }
-    if (current_os == "win") {
-      libs += [ "userenv.lib" ]
     }
   }
 }
