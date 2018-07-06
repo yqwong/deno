@@ -13,6 +13,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "include/deno.h"
 #include "src/msg_generated.h"
+#include "src/resolve_module.h"
 #include "third_party/v8/src/base/logging.h"
 
 namespace deno {
@@ -43,8 +44,15 @@ void HandleStart(Deno* d) {
   deno_set_response(d, bufout);
 }
 
+// https://github.com/ry/deno/blob/golang/os.go#L100-L154
 void HandleCodeFetch(Deno* d, const CodeFetch* msg) {
-  printf("HandleCodeFetch\n");
+  auto module_specifier = msg->module_specifier()->c_str();
+  auto containing_file = msg->containing_file()->c_str();
+  printf("HandleCodeFetch module_specifier = %s containing_file = %s\n",
+         module_specifier, containing_file);
+
+  // Call rust.
+  resolve_module();
 }
 
 void MessagesFromJS(Deno* d, const char* channel, deno_buf buf) {
@@ -59,7 +67,6 @@ void MessagesFromJS(Deno* d, const char* channel, deno_buf buf) {
          channel, msg_type, msg_type_name);
   switch (msg_type) {
     case Any_Start:
-      printf("Got start message\n");
       HandleStart(d);
       break;
 

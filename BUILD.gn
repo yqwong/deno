@@ -21,6 +21,10 @@ rust_executable("deno") {
   ]
 }
 
+rust_extern_component("resolve_module") {
+  source_root = "src/resolve_module.rs"
+}
+
 rust_library("libc") {
   source_root = "third_party/rust_crates/libc/src/lib.rs"
   cfg = [
@@ -65,6 +69,8 @@ static_library("libdeno") {
   deps = [
     ":create_snapshot_deno",
     ":deno_nosnapshot",
+    ":resolve_module",
+    "//build_extra/rust:stdlib_extern",
   ]
   configs += [ ":deno_config" ]
 }
